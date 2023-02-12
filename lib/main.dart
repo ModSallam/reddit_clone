@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,7 +34,16 @@ class MyApp extends ConsumerStatefulWidget {
 class _MyAppState extends ConsumerState<MyApp> {
   UserModel? userModel;
 
-  void getData() {}
+  void getData(WidgetRef ref, User data) async {
+    userModel = await ref
+        .watch(authControllerProvider.notifier)
+        .getUserData(data.uid)
+        .first;
+
+    ref.read(userProvider.notifier).update((state) => userModel);
+
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,18 +55,18 @@ class _MyAppState extends ConsumerState<MyApp> {
             routerDelegate: RoutemasterDelegate(
               routesBuilder: (context) {
                 if (user != null) {
-                  return loggedInRoute;
-                } else {
-                  return loggedOutRoute;
+                  getData(ref, user);
+                  if (userModel != null) {
+                    return loggedInRoute;
+                  }
                 }
+                return loggedOutRoute;
               },
             ),
             routeInformationParser: const RoutemasterParser(),
           ),
           error: (error, stackTrace) => CustomError(errorMessage: '$error'),
-          loading: () => const Scaffold(
-            body: CustomLoading(),
-          ),
+          loading: () => const CustomLoading(),
         );
   }
 }
